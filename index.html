@@ -1,0 +1,1129 @@
+<!doctype html>
+<html lang="fr" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fiche Formation Interactive — Résid'Azur</title>
+  <meta name="description" content="Activité pédagogique pour synthétiser une formation : titre, public, objectifs, programme et modalités avec génération de PDF." />
+  
+  <!-- Polices Google : Fira Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,500&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Fira Sans"', 'system-ui', '-apple-system', 'sans-serif'],
+          },
+          colors: {
+            accent: {
+              DEFAULT: '#810464',
+              hover: '#6a0352',
+              light: '#fbf0f8',
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- jsPDF pour la génération de PDF en local/navigateur/GitHub Pages -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <style>
+    :root {
+      --color-accent: #810464;
+      --color-accent-hover: #6a0352;
+    }
+
+    body {
+      font-family: 'Fira Sans', system-ui, -apple-system, sans-serif;
+      font-size: 16px;
+      background-color: #f8fafc;
+      color: #0f172a;
+    }
+
+    :focus-visible {
+      outline: 3px solid var(--color-accent);
+      outline-offset: 2px;
+    }
+
+    /* Style infobulle */
+    .tooltip-box {
+      opacity: 0;
+      visibility: hidden;
+      transform: translate(-50%, 6px);
+      transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s;
+    }
+    .tooltip-wrapper:hover .tooltip-box,
+    .tooltip-wrapper:focus-within .tooltip-box,
+    .tooltip-box.is-active {
+      opacity: 1;
+      visibility: visible;
+      transform: translate(-50%, 0);
+    }
+
+    /* Custom scrollbars */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    /* Impression propre */
+    @media print {
+      body {
+        background: white !important;
+        color: black !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .print-only {
+        display: block !important;
+      }
+      .shadow-sm, .shadow-lg {
+        box-shadow: none !important;
+      }
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-900 antialiased py-8 md:py-12 px-4 sm:px-6">
+
+  <div class="max-w-4xl mx-auto">
+    <!-- Barre supérieure : Bouton Plein Écran -->
+    <header class="mb-8">
+      <div class="flex items-center justify-between gap-4 mb-6">
+        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-900 border border-purple-200">
+          <span class="w-2 h-2 rounded-full bg-[#810464]"></span>
+          Parcours CCE Formateur d'entreprise
+        </span>
+
+        <!-- Bouton Plein écran -->
+        <button
+          type="button"
+          id="btn-fullscreen"
+          class="inline-flex items-center gap-2 px-3.5 py-2 text-sm font-medium text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg shadow-sm transition-colors focus:ring-2 focus:ring-[#810464]/20"
+          aria-label="Basculer en plein écran"
+          title="Basculer en plein écran"
+        >
+          <!-- Icône Agrandir -->
+          <svg id="icon-fs-enter" class="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+          </svg>
+          <!-- Icône Réduire -->
+          <svg id="icon-fs-exit" class="w-4 h-4 text-slate-600 hidden" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25" />
+          </svg>
+          <span id="label-fullscreen">Plein écran</span>
+        </button>
+      </div>
+
+      <h1 class="text-3xl md:text-4xl font-bold text-slate-900 mb-4 tracking-tight">
+        Fiche Formation Interactive
+      </h1>
+
+      <!-- Consigne -->
+      <section class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm mb-6" aria-labelledby="consigne-title">
+        <h2 id="consigne-title" class="text-xl font-bold text-slate-800 mb-3">Consigne</h2>
+        <p class="text-slate-600 leading-relaxed">
+          À partir de l'analyse de la demande de formation de Résid'Azur, des savoirs, savoir-faire et savoir-être que vous avez identifiés et des objectifs pédagogiques que vous avez formulés, complétez la fiche synthétique ci-dessous.
+        </p>
+        <p class="text-slate-600 leading-relaxed mt-2">
+          Cette fiche a pour vocation de présenter de manière claire et structurée l'ensemble des composantes de la formation que vous allez concevoir. Elle constitue un document de référence que vous pourrez transmettre au service RH pour validation avant de passer à la conception détaillée du déroulé pédagogique.
+        </p>
+      </section>
+
+      <!-- Rappel du cas (dépliable) -->
+      <section class="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-sm mb-8" aria-labelledby="rappel-title">
+        <button
+          type="button"
+          id="btn-rappel"
+          class="w-full flex items-center justify-between p-5 text-left hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[#810464]"
+          aria-expanded="false"
+          aria-controls="content-rappel"
+        >
+          <h2 id="rappel-title" class="text-xl font-bold text-slate-800">Rappel du cas</h2>
+          <svg id="chevron-rappel" class="w-5 h-5 text-slate-400 transition-transform duration-200" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+          </svg>
+        </button>
+        <div id="content-rappel" class="hidden p-5 pt-0 border-t border-slate-100 text-slate-600 leading-relaxed space-y-4">
+          <p>
+            Résid'Azur, groupe de résidences hôtelières et de tourisme, constate une hausse significative des réclamations clients liées à la qualité de l'accueil et à la gestion des situations difficiles (clients mécontents, erreurs de réservation, demandes spécifiques non anticipées). Pour améliorer durablement la satisfaction client, la direction des ressources humaines souhaite former l'ensemble du personnel en contact avec la clientèle aux techniques de communication et de gestion des situations délicates.
+          </p>
+          <p>
+            L'entreprise décide de lancer un programme de formation interne, déployé en plusieurs sessions sur le second semestre, piloté par un groupe de formateurs internes issus des équipes d'encadrement. Ces formateurs doivent concevoir, animer et évaluer des séquences de formation courtes, combinant apports pratiques, mises en situation et jeux de rôle. Caractéristiques de Résid'Azur :
+          </p>
+          <ul class="list-disc list-inside space-y-2 ml-2">
+            <li>Résid'Azur est un groupe français de 180 personnes, âgées de 20 à 57 ans, réparti sur quatre résidences (Nice, Marseille, Montpellier et Perpignan).</li>
+            <li>Les employés concernés sont 120 collaborateurs : réceptionnistes et responsables de résidence en contact avec la clientèle.</li>
+            <li>Résid'Azur souhaite déployer des sessions de formation en présentiel de deux jours (14 heures) organisées sur chaque site, par groupes de 10 à 12 participants maximum.</li>
+            <li>Niveau initial des apprenants : des pratiques très hétérogènes, certains collaborateurs ayant plus de 15 ans d'expérience et d'autres étant en poste depuis moins de 6 mois. Aucune formation formelle à la gestion des conflits n'a été dispensée auparavant.</li>
+            <li>Une collaboratrice du site de Marseille est en situation de handicap visuel.</li>
+          </ul>
+        </div>
+      </section>
+    </header>
+
+    <main>
+      <!-- Résumé des erreurs pour l'accessibilité (injecté dynamiquement) -->
+      <div id="error-summary-container"></div>
+
+      <!-- Formulaire principal -->
+      <form id="fiche-form" class="space-y-10" novalidate>
+        
+        <!-- Sections 1 à 3 : Titre, Public, Objectif global -->
+        <section class="space-y-8 bg-white p-6 md:p-8 rounded-2xl border border-slate-200 shadow-sm">
+          
+          <!-- 1. Titre de la formation -->
+          <div class="space-y-2">
+            <div class="flex items-center">
+              <label for="field-titre" class="block text-slate-700 text-xl font-bold">
+                1. Titre de la formation <span class="text-red-500" aria-hidden="true">*</span>
+              </label>
+              <!-- Tooltip -->
+              <div class="relative inline-block ml-2 align-middle tooltip-wrapper">
+                <button
+                  type="button"
+                  id="btn-help-titre"
+                  class="text-slate-400 hover:text-[#810464] focus:text-[#810464] transition-colors rounded-full p-0.5"
+                  aria-label="Aide pour 1. Titre de la formation"
+                  aria-describedby="help-titre"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                    <line x1="12" y1="17" x2="12.01" y2="17" />
+                  </svg>
+                </button>
+                <div id="help-titre" role="tooltip" class="tooltip-box absolute z-50 w-64 p-3 mt-2 text-sm text-white bg-slate-800 rounded-lg shadow-xl left-1/2 -translate-x-1/2 pointer-events-none">
+                  <div class="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-800 rotate-45"></div>
+                  Formulez un titre clair et explicite qui reflète l'objectif principal de la formation.
+                </div>
+              </div>
+            </div>
+            <input
+              type="text"
+              id="field-titre"
+              name="titre"
+              required
+              aria-required="true"
+              aria-describedby="help-titre error-titre"
+              class="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg transition-all duration-200 focus:ring-2 focus:ring-[#810464]/20 focus:border-[#810464] outline-none hover:border-slate-300"
+            />
+            <p id="error-titre" class="hidden text-sm text-red-600 font-medium" role="alert">Ce champ est obligatoire</p>
+          </div>
+
+          <!-- 2. Public cible -->
+          <div class="space-y-2">
+            <div class="flex items-center">
+              <label for="field-publicCible" class="block text-slate-700 text-xl font-bold">
+                2. Public cible <span class="text-red-500" aria-hidden="true">*</span>
+              </label>
+              <div class="relative inline-block ml-2 align-middle tooltip-wrapper">
+                <button
+                  type="button"
+                  id="btn-help-publicCible"
+                  class="text-slate-400 hover:text-[#810464] focus:text-[#810464] transition-colors rounded-full p-0.5"
+                  aria-label="Aide pour 2. Public cible"
+                  aria-describedby="help-publicCible"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                    <line x1="12" y1="17" x2="12.01" y2="17" />
+                  </svg>
+                </button>
+                <div id="help-publicCible" role="tooltip" class="tooltip-box absolute z-50 w-64 p-3 mt-2 text-sm text-white bg-slate-800 rounded-lg shadow-xl left-1/2 -translate-x-1/2 pointer-events-none">
+                  <div class="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-800 rotate-45"></div>
+                  Décrivez précisément les participants : fonction, niveau d'expérience, effectif, particularités.
+                </div>
+              </div>
+            </div>
+            <textarea
+              id="field-publicCible"
+              name="publicCible"
+              rows="4"
+              required
+              aria-required="true"
+              aria-describedby="help-publicCible error-publicCible"
+              class="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg transition-all duration-200 focus:ring-2 focus:ring-[#810464]/20 focus:border-[#810464] outline-none hover:border-slate-300"
+            ></textarea>
+            <p id="error-publicCible" class="hidden text-sm text-red-600 font-medium" role="alert">Ce champ est obligatoire</p>
+          </div>
+
+          <!-- 3. Objectif de formation -->
+          <div class="space-y-2">
+            <div class="flex items-center">
+              <label for="field-objectifFormation" class="block text-slate-700 text-xl font-bold">
+                3. Objectif de formation <span class="text-red-500" aria-hidden="true">*</span>
+              </label>
+              <div class="relative inline-block ml-2 align-middle tooltip-wrapper">
+                <button
+                  type="button"
+                  id="btn-help-objectifFormation"
+                  class="text-slate-400 hover:text-[#810464] focus:text-[#810464] transition-colors rounded-full p-0.5"
+                  aria-label="Aide pour 3. Objectif de formation"
+                  aria-describedby="help-objectifFormation"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                    <line x1="12" y1="17" x2="12.01" y2="17" />
+                  </svg>
+                </button>
+                <div id="help-objectifFormation" role="tooltip" class="tooltip-box absolute z-50 w-64 p-3 mt-2 text-sm text-white bg-slate-800 rounded-lg shadow-xl left-1/2 -translate-x-1/2 pointer-events-none">
+                  <div class="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-800 rotate-45"></div>
+                  Formulez l'objectif global visé par le commanditaire. Il répond à la question : 'À l'issue de la formation, les participants seront capables de...'
+                </div>
+              </div>
+            </div>
+            <textarea
+              id="field-objectifFormation"
+              name="objectifFormation"
+              rows="4"
+              required
+              aria-required="true"
+              aria-describedby="help-objectifFormation error-objectifFormation"
+              class="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg transition-all duration-200 focus:ring-2 focus:ring-[#810464]/20 focus:border-[#810464] outline-none hover:border-slate-300"
+            ></textarea>
+            <p id="error-objectifFormation" class="hidden text-sm text-red-600 font-medium" role="alert">Ce champ est obligatoire</p>
+          </div>
+
+        </section>
+
+        <!-- 4. Objectifs pédagogiques (champs dynamiques, min 2) -->
+        <section class="space-y-6 bg-white p-6 md:p-8 rounded-2xl border border-slate-200 shadow-sm" aria-labelledby="section-objectifs">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center">
+              <h2 id="section-objectifs" class="text-xl font-bold text-slate-800">
+                4. Objectifs pédagogiques <span class="text-red-500" aria-hidden="true">*</span>
+              </h2>
+              <div class="relative inline-block ml-2 align-middle tooltip-wrapper">
+                <button
+                  type="button"
+                  id="btn-help-objectifs"
+                  class="text-slate-400 hover:text-[#810464] focus:text-[#810464] transition-colors rounded-full p-0.5"
+                  aria-label="Aide pour les objectifs pédagogiques"
+                  aria-describedby="help-objectifs"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                    <line x1="12" y1="17" x2="12.01" y2="17" />
+                  </svg>
+                </button>
+                <div id="help-objectifs" role="tooltip" class="tooltip-box absolute z-50 w-64 p-3 mt-2 text-sm text-white bg-slate-800 rounded-lg shadow-xl left-1/2 -translate-x-1/2 pointer-events-none">
+                  <div class="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-800 rotate-45"></div>
+                  Formulez chaque objectif avec un verbe d'action observable (taxonomie de Bloom) + contenu + conditions.
+                </div>
+              </div>
+            </div>
+            <span class="text-xs font-medium text-slate-500 uppercase tracking-wider">Min. 2 requis</span>
+          </div>
+
+          <div id="objectives-list" class="space-y-4" aria-live="polite">
+            <!-- Injecté dynamiquement par JavaScript -->
+          </div>
+
+          <button
+            type="button"
+            id="btn-add-objective"
+            class="flex items-center text-sm font-semibold text-[#810464] hover:text-[#6a0352] transition-colors px-4 py-2 rounded-lg border border-[#810464]/20 hover:bg-[#810464]/5"
+          >
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            Ajouter un objectif pédagogique
+          </button>
+        </section>
+
+        <!-- 5. Durée -->
+        <section class="bg-white p-6 md:p-8 rounded-2xl border border-slate-200 shadow-sm">
+          <div class="space-y-2">
+            <div class="flex items-center">
+              <label for="field-duree" class="block text-slate-700 text-xl font-bold">
+                5. Durée <span class="text-red-500" aria-hidden="true">*</span>
+              </label>
+              <div class="relative inline-block ml-2 align-middle tooltip-wrapper">
+                <button
+                  type="button"
+                  id="btn-help-duree"
+                  class="text-slate-400 hover:text-[#810464] focus:text-[#810464] transition-colors rounded-full p-0.5"
+                  aria-label="Aide pour 5. Durée"
+                  aria-describedby="help-duree"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                    <line x1="12" y1="17" x2="12.01" y2="17" />
+                  </svg>
+                </button>
+                <div id="help-duree" role="tooltip" class="tooltip-box absolute z-50 w-64 p-3 mt-2 text-sm text-white bg-slate-800 rounded-lg shadow-xl left-1/2 -translate-x-1/2 pointer-events-none">
+                  <div class="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-800 rotate-45"></div>
+                  Indiquez la durée totale et le découpage éventuel.
+                </div>
+              </div>
+            </div>
+            <input
+              type="text"
+              id="field-duree"
+              name="duree"
+              required
+              aria-required="true"
+              aria-describedby="help-duree error-duree"
+              class="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg transition-all duration-200 focus:ring-2 focus:ring-[#810464]/20 focus:border-[#810464] outline-none hover:border-slate-300"
+            />
+            <p id="error-duree" class="hidden text-sm text-red-600 font-medium" role="alert">Ce champ est obligatoire</p>
+          </div>
+        </section>
+
+        <!-- 6. Programme (Savoirs, Savoir-faire, Savoir-être) -->
+        <section class="space-y-8 bg-white p-6 md:p-8 rounded-2xl border border-slate-200 shadow-sm" aria-labelledby="section-programme">
+          <div class="flex items-center border-b border-slate-100 pb-4">
+            <h2 id="section-programme" class="text-xl font-bold text-slate-800">
+              6. Programme <span class="text-red-500" aria-hidden="true">*</span>
+            </h2>
+            <div class="relative inline-block ml-2 align-middle tooltip-wrapper">
+              <button
+                type="button"
+                id="btn-help-programme"
+                class="text-slate-400 hover:text-[#810464] focus:text-[#810464] transition-colors rounded-full p-0.5"
+                aria-label="Aide pour 6. Programme"
+                aria-describedby="help-programme"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+              </button>
+              <div id="help-programme" role="tooltip" class="tooltip-box absolute z-50 w-64 p-3 mt-2 text-sm text-white bg-slate-800 rounded-lg shadow-xl left-1/2 -translate-x-1/2 pointer-events-none">
+                <div class="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-800 rotate-45"></div>
+                Savoirs : Connaissances théoriques. Savoir-faire : Compétences pratiques. Savoir-être : Postures professionnelles.
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 gap-8">
+            <!-- Savoirs -->
+            <div class="space-y-2">
+              <label for="field-savoirs" class="block text-slate-700 text-sm font-semibold">
+                Savoirs (Connaissances) <span class="text-red-500" aria-hidden="true">*</span>
+              </label>
+              <textarea
+                id="field-savoirs"
+                name="savoirs"
+                rows="4"
+                required
+                aria-required="true"
+                aria-describedby="error-savoirs"
+                class="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg transition-all duration-200 focus:ring-2 focus:ring-[#810464]/20 focus:border-[#810464] outline-none hover:border-slate-300"
+              ></textarea>
+              <p id="error-savoirs" class="hidden text-sm text-red-600 font-medium" role="alert">Ce champ est obligatoire</p>
+            </div>
+
+            <!-- Savoir-faire -->
+            <div class="space-y-2">
+              <label for="field-savoirFaire" class="block text-slate-700 text-sm font-semibold">
+                Savoir-faire (Compétences) <span class="text-red-500" aria-hidden="true">*</span>
+              </label>
+              <textarea
+                id="field-savoirFaire"
+                name="savoirFaire"
+                rows="4"
+                required
+                aria-required="true"
+                aria-describedby="error-savoirFaire"
+                class="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg transition-all duration-200 focus:ring-2 focus:ring-[#810464]/20 focus:border-[#810464] outline-none hover:border-slate-300"
+              ></textarea>
+              <p id="error-savoirFaire" class="hidden text-sm text-red-600 font-medium" role="alert">Ce champ est obligatoire</p>
+            </div>
+
+            <!-- Savoir-être -->
+            <div class="space-y-2">
+              <label for="field-savoirEtre" class="block text-slate-700 text-sm font-semibold">
+                Savoir-être (Postures) <span class="text-red-500" aria-hidden="true">*</span>
+              </label>
+              <textarea
+                id="field-savoirEtre"
+                name="savoirEtre"
+                rows="4"
+                required
+                aria-required="true"
+                aria-describedby="error-savoirEtre"
+                class="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg transition-all duration-200 focus:ring-2 focus:ring-[#810464]/20 focus:border-[#810464] outline-none hover:border-slate-300"
+              ></textarea>
+              <p id="error-savoirEtre" class="hidden text-sm text-red-600 font-medium" role="alert">Ce champ est obligatoire</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- 7. Modalités -->
+        <section class="bg-white p-6 md:p-8 rounded-2xl border border-slate-200 shadow-sm">
+          <div class="space-y-2">
+            <div class="flex items-center">
+              <label for="field-modalites" class="block text-slate-700 text-xl font-bold">
+                7. Modalités <span class="text-red-500" aria-hidden="true">*</span>
+              </label>
+              <div class="relative inline-block ml-2 align-middle tooltip-wrapper">
+                <button
+                  type="button"
+                  id="btn-help-modalites"
+                  class="text-slate-400 hover:text-[#810464] focus:text-[#810464] transition-colors rounded-full p-0.5"
+                  aria-label="Aide pour 7. Modalités"
+                  aria-describedby="help-modalites"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                    <line x1="12" y1="17" x2="12.01" y2="17" />
+                  </svg>
+                </button>
+                <div id="help-modalites" role="tooltip" class="tooltip-box absolute z-50 w-64 p-3 mt-2 text-sm text-white bg-slate-800 rounded-lg shadow-xl left-1/2 -translate-x-1/2 pointer-events-none">
+                  <div class="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-800 rotate-45"></div>
+                  Précisez le format : présentiel, distanciel, hybride...
+                </div>
+              </div>
+            </div>
+            <textarea
+              id="field-modalites"
+              name="modalites"
+              rows="4"
+              required
+              aria-required="true"
+              aria-describedby="help-modalites error-modalites"
+              class="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg transition-all duration-200 focus:ring-2 focus:ring-[#810464]/20 focus:border-[#810464] outline-none hover:border-slate-300"
+            ></textarea>
+            <p id="error-modalites" class="hidden text-sm text-red-600 font-medium" role="alert">Ce champ est obligatoire</p>
+          </div>
+        </section>
+
+        <!-- Boutons d'action : Réinitialiser et Télécharger -->
+        <div class="flex flex-col items-center pt-6 pb-12 space-y-4">
+          <div class="flex flex-col sm:flex-row gap-4 w-full justify-center">
+            
+            <!-- Bouton Réinitialiser -->
+            <button
+              type="button"
+              id="btn-reset"
+              class="flex items-center justify-center px-6 py-4 rounded-xl font-bold text-slate-700 border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-95 shadow-sm"
+            >
+              <svg class="w-5 h-5 mr-2 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+              </svg>
+              Réinitialiser la fiche
+            </button>
+
+            <!-- Bouton Valider et Télécharger le PDF -->
+            <button
+              type="submit"
+              id="btn-submit"
+              class="flex items-center justify-center px-8 py-4 rounded-xl font-bold text-lg text-white bg-[#810464] hover:bg-[#6a0352] shadow-lg hover:shadow-[#810464]/25 hover:-translate-y-0.5 transition-all duration-200 active:scale-95 min-w-[300px]"
+            >
+              <svg id="icon-download" class="w-6 h-6 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+              </svg>
+              <svg id="icon-success" class="w-6 h-6 mr-2 hidden text-emerald-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+              </svg>
+              <span id="label-submit">Valider et télécharger la fiche (PDF)</span>
+            </button>
+          </div>
+
+          <!-- Message de confirmation -->
+          <p id="submit-feedback" class="hidden text-emerald-700 font-semibold text-center text-sm bg-emerald-50 border border-emerald-200 py-2 px-4 rounded-lg">
+            Votre fiche a été téléchargée avec succès en PDF !
+          </p>
+
+          <p class="mt-4 text-sm text-slate-500 font-medium text-center">
+            Tous les champs marqués d'une <span class="text-red-500">*</span> sont obligatoires.
+          </p>
+        </div>
+
+      </form>
+    </main>
+
+    <footer class="mt-12 pt-8 border-t border-slate-200 text-center text-slate-400 text-sm">
+      <p>© 2026 Parcours CCE — Exercer la mission de formateur en entreprise</p>
+    </footer>
+  </div>
+
+  <!-- JavaScript Vanilla autonome -->
+  <script>
+    (function() {
+      'use strict';
+
+      const STORAGE_KEY = 'fiche_formation_data';
+
+      const INITIAL_DATA = {
+        titre: '',
+        publicCible: '',
+        objectifFormation: '',
+        objectifsPedagogiques: ['', ''],
+        duree: '',
+        savoirs: '',
+        savoirFaire: '',
+        savoirEtre: '',
+        modalites: ''
+      };
+
+      let state = { ...INITIAL_DATA };
+
+      // Éléments DOM
+      const form = document.getElementById('fiche-form');
+      const objectivesList = document.getElementById('objectives-list');
+      const btnAddObjective = document.getElementById('btn-add-objective');
+      const btnReset = document.getElementById('btn-reset');
+      const btnSubmit = document.getElementById('btn-submit');
+      const labelSubmit = document.getElementById('label-submit');
+      const iconDownload = document.getElementById('icon-download');
+      const iconSuccess = document.getElementById('icon-success');
+      const submitFeedback = document.getElementById('submit-feedback');
+      const errorSummaryContainer = document.getElementById('error-summary-container');
+      const btnRappel = document.getElementById('btn-rappel');
+      const contentRappel = document.getElementById('content-rappel');
+      const chevronRappel = document.getElementById('chevron-rappel');
+      const btnFullscreen = document.getElementById('btn-fullscreen');
+      const iconFsEnter = document.getElementById('icon-fs-enter');
+      const iconFsExit = document.getElementById('icon-fs-exit');
+      const labelFullscreen = document.getElementById('label-fullscreen');
+
+      // --- Gestion Plein Écran ---
+      function isFullscreen() {
+        return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+      }
+
+      function updateFullscreenUI() {
+        const active = isFullscreen();
+        if (active) {
+          iconFsEnter.classList.add('hidden');
+          iconFsExit.classList.remove('hidden');
+          labelFullscreen.textContent = 'Quitter le plein écran';
+          btnFullscreen.setAttribute('aria-label', 'Quitter le plein écran');
+          btnFullscreen.setAttribute('aria-pressed', 'true');
+        } else {
+          iconFsEnter.classList.remove('hidden');
+          iconFsExit.classList.add('hidden');
+          labelFullscreen.textContent = 'Plein écran';
+          btnFullscreen.setAttribute('aria-label', 'Basculer en plein écran');
+          btnFullscreen.setAttribute('aria-pressed', 'false');
+        }
+      }
+
+      btnFullscreen.addEventListener('click', function() {
+        if (!isFullscreen()) {
+          const el = document.documentElement;
+          if (el.requestFullscreen) {
+            el.requestFullscreen();
+          } else if (el.webkitRequestFullscreen) {
+            el.webkitRequestFullscreen();
+          } else if (el.msRequestFullscreen) {
+            el.msRequestFullscreen();
+          }
+        } else {
+          if (document.exitFullscreen) {
+            document.exitFullscreen();
+          } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+          } else if (document.msExitFullscreen) {
+            document.msExitFullscreen();
+          }
+        }
+      });
+
+      document.addEventListener('fullscreenchange', updateFullscreenUI);
+      document.addEventListener('webkitfullscreenchange', updateFullscreenUI);
+      document.addEventListener('mozfullscreenchange', updateFullscreenUI);
+      document.addEventListener('MSFullscreenChange', updateFullscreenUI);
+
+      // --- Gestion Section Dépliable Rappel du cas ---
+      btnRappel.addEventListener('click', function() {
+        const isExpanded = btnRappel.getAttribute('aria-expanded') === 'true';
+        btnRappel.setAttribute('aria-expanded', !isExpanded);
+        if (isExpanded) {
+          contentRappel.classList.add('hidden');
+          chevronRappel.classList.remove('rotate-180');
+        } else {
+          contentRappel.classList.remove('hidden');
+          chevronRappel.classList.add('rotate-180');
+        }
+      });
+
+      // --- Gestion Tooltips mobiles / clic ---
+      document.querySelectorAll('.tooltip-wrapper button').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          const box = btn.nextElementSibling;
+          if (box && box.classList.contains('tooltip-box')) {
+            const wasActive = box.classList.contains('is-active');
+            document.querySelectorAll('.tooltip-box.is-active').forEach(function(tb) {
+              tb.classList.remove('is-active');
+            });
+            if (!wasActive) {
+              box.classList.add('is-active');
+            }
+          }
+        });
+      });
+
+      document.addEventListener('click', function() {
+        document.querySelectorAll('.tooltip-box.is-active').forEach(function(tb) {
+          tb.classList.remove('is-active');
+        });
+      });
+
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+          document.querySelectorAll('.tooltip-box.is-active').forEach(function(tb) {
+            tb.classList.remove('is-active');
+          });
+        }
+      });
+
+      // --- Chargement et Sauvegarde localStorage ---
+      function loadSavedData() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            state = {
+              titre: parsed.titre || '',
+              publicCible: parsed.publicCible || '',
+              objectifFormation: parsed.objectifFormation || '',
+              objectifsPedagogiques: Array.isArray(parsed.objectifsPedagogiques) && parsed.objectifsPedagogiques.length >= 2
+                ? parsed.objectifsPedagogiques
+                : ['', ''],
+              duree: parsed.duree || '',
+              savoirs: parsed.savoirs || '',
+              savoirFaire: parsed.savoirFaire || '',
+              savoirEtre: parsed.savoirEtre || '',
+              modalites: parsed.modalites || ''
+            };
+          }
+        } catch (err) {
+          console.error('Erreur lecture localStorage', err);
+        }
+      }
+
+      function saveData() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        } catch (err) {
+          console.error('Erreur écriture localStorage', err);
+        }
+      }
+
+      function populateFields() {
+        document.getElementById('field-titre').value = state.titre;
+        document.getElementById('field-publicCible').value = state.publicCible;
+        document.getElementById('field-objectifFormation').value = state.objectifFormation;
+        document.getElementById('field-duree').value = state.duree;
+        document.getElementById('field-savoirs').value = state.savoirs;
+        document.getElementById('field-savoirFaire').value = state.savoirFaire;
+        document.getElementById('field-savoirEtre').value = state.savoirEtre;
+        document.getElementById('field-modalites').value = state.modalites;
+        renderObjectives();
+      }
+
+      // --- Objectifs Pédagogiques dynamiques ---
+      function renderObjectives() {
+        objectivesList.innerHTML = '';
+        state.objectifsPedagogiques.forEach(function(val, idx) {
+          const row = document.createElement('div');
+          row.className = 'flex gap-3 items-start';
+          row.id = 'obj-row-' + idx;
+
+          const inputCol = document.createElement('div');
+          inputCol.className = 'flex-grow';
+
+          const srLabel = document.createElement('label');
+          srLabel.htmlFor = 'field-obj-' + idx;
+          srLabel.className = 'sr-only';
+          srLabel.textContent = 'Objectif pédagogique ' + (idx + 1);
+
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.id = 'field-obj-' + idx;
+          input.value = val;
+          input.required = true;
+          input.setAttribute('aria-required', 'true');
+          input.className = 'w-full px-4 py-3 bg-white border border-slate-200 rounded-lg transition-all focus:ring-2 focus:ring-[#810464]/20 focus:border-[#810464] outline-none hover:border-slate-300';
+          
+          input.addEventListener('input', function(e) {
+            state.objectifsPedagogiques[idx] = e.target.value;
+            saveData();
+            clearSingleError('obj-' + idx, input);
+          });
+
+          const errP = document.createElement('p');
+          errP.id = 'error-obj-' + idx;
+          errP.className = 'hidden text-xs text-red-600 mt-1 font-medium';
+          errP.setAttribute('role', 'alert');
+          errP.textContent = 'Ce champ est obligatoire';
+
+          inputCol.appendChild(srLabel);
+          inputCol.appendChild(input);
+          inputCol.appendChild(errP);
+          row.appendChild(inputCol);
+
+          if (state.objectifsPedagogiques.length > 2) {
+            const btnDelete = document.createElement('button');
+            btnDelete.type = 'button';
+            btnDelete.className = 'p-3 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors';
+            btnDelete.setAttribute('aria-label', "Supprimer l'objectif pédagogique " + (idx + 1));
+            btnDelete.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg>';
+            
+            btnDelete.addEventListener('click', function() {
+              if (state.objectifsPedagogiques.length <= 2) return;
+              state.objectifsPedagogiques.splice(idx, 1);
+              saveData();
+              renderObjectives();
+            });
+            row.appendChild(btnDelete);
+          }
+
+          objectivesList.appendChild(row);
+        });
+      }
+
+      btnAddObjective.addEventListener('click', function() {
+        state.objectifsPedagogiques.push('');
+        saveData();
+        renderObjectives();
+        const nextIdx = state.objectifsPedagogiques.length - 1;
+        const nextInput = document.getElementById('field-obj-' + nextIdx);
+        if (nextInput) nextInput.focus();
+      });
+
+      // Écoute des champs simples
+      ['titre', 'publicCible', 'objectifFormation', 'duree', 'savoirs', 'savoirFaire', 'savoirEtre', 'modalites'].forEach(function(key) {
+        const el = document.getElementById('field-' + key);
+        if (el) {
+          el.addEventListener('input', function(e) {
+            state[key] = e.target.value;
+            saveData();
+            clearSingleError(key, el);
+          });
+        }
+      });
+
+      function clearSingleError(key, inputEl) {
+        const errEl = document.getElementById('error-' + key);
+        if (errEl) errEl.classList.add('hidden');
+        if (inputEl) {
+          inputEl.classList.remove('border-red-500', 'bg-red-50');
+          inputEl.classList.add('border-slate-200');
+          inputEl.removeAttribute('aria-invalid');
+        }
+      }
+
+      // --- Réinitialisation ---
+      btnReset.addEventListener('click', function() {
+        const confirmReset = window.confirm('Êtes-vous sûr de vouloir réinitialiser la fiche ? Toutes les données saisies seront perdues.');
+        if (confirmReset) {
+          state = {
+            titre: '',
+            publicCible: '',
+            objectifFormation: '',
+            objectifsPedagogiques: ['', ''],
+            duree: '',
+            savoirs: '',
+            savoirFaire: '',
+            savoirEtre: '',
+            modalites: ''
+          };
+          localStorage.removeItem(STORAGE_KEY);
+          populateFields();
+          clearAllErrors();
+          submitFeedback.classList.add('hidden');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      });
+
+      function clearAllErrors() {
+        errorSummaryContainer.innerHTML = '';
+        document.querySelectorAll('[id^="error-"]').forEach(function(el) {
+          el.classList.add('hidden');
+        });
+        document.querySelectorAll('input, textarea').forEach(function(el) {
+          el.classList.remove('border-red-500', 'bg-red-50');
+          el.classList.add('border-slate-200');
+          el.removeAttribute('aria-invalid');
+        });
+      }
+
+      // --- Validation ---
+      function validateForm() {
+        const errors = [];
+
+        if (!state.titre.trim()) errors.push({ id: 'titre', label: '1. Titre de la formation', message: 'Ce champ est obligatoire' });
+        if (!state.publicCible.trim()) errors.push({ id: 'publicCible', label: '2. Public cible', message: 'Ce champ est obligatoire' });
+        if (!state.objectifFormation.trim()) errors.push({ id: 'objectifFormation', label: '3. Objectif de formation', message: 'Ce champ est obligatoire' });
+
+        state.objectifsPedagogiques.forEach(function(obj, idx) {
+          if (!obj.trim()) {
+            errors.push({ id: 'obj-' + idx, label: 'Objectif pédagogique ' + (idx + 1), message: 'Ce champ est obligatoire' });
+          }
+        });
+
+        if (!state.duree.trim()) errors.push({ id: 'duree', label: '5. Durée', message: 'Ce champ est obligatoire' });
+        if (!state.savoirs.trim()) errors.push({ id: 'savoirs', label: 'Savoirs (Connaissances)', message: 'Ce champ est obligatoire' });
+        if (!state.savoirFaire.trim()) errors.push({ id: 'savoirFaire', label: 'Savoir-faire (Compétences)', message: 'Ce champ est obligatoire' });
+        if (!state.savoirEtre.trim()) errors.push({ id: 'savoirEtre', label: 'Savoir-être (Postures)', message: 'Ce champ est obligatoire' });
+        if (!state.modalites.trim()) errors.push({ id: 'modalites', label: '7. Modalités', message: 'Ce champ est obligatoire' });
+
+        return errors;
+      }
+
+      function displayErrors(errors) {
+        clearAllErrors();
+        if (errors.length === 0) return;
+
+        // Banderole récapitulative
+        const alertBox = document.createElement('div');
+        alertBox.setAttribute('role', 'alert');
+        alertBox.setAttribute('aria-labelledby', 'error-summary-title');
+        alertBox.className = 'mb-8 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-lg';
+
+        const headerDiv = document.createElement('div');
+        headerDiv.className = 'flex items-center mb-2';
+        headerDiv.innerHTML = '<svg class="w-5 h-5 text-red-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><h2 id="error-summary-title" class="text-xl font-bold text-red-800">Veuillez corriger ' + (errors.length > 1 ? 'les ' + errors.length + ' erreurs suivantes :' : "l'erreur suivante :") + '</h2>';
+        alertBox.appendChild(headerDiv);
+
+        const list = document.createElement('ul');
+        list.className = 'list-disc list-inside space-y-1';
+
+        errors.forEach(function(err) {
+          const li = document.createElement('li');
+          const link = document.createElement('a');
+          link.href = '#field-' + err.id;
+          link.className = 'text-red-700 hover:underline focus:outline-none focus:ring-2 focus:ring-red-500 rounded px-1';
+          link.textContent = err.label + ' : ' + err.message;
+
+          link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const el = document.getElementById('field-' + err.id);
+            if (el) {
+              el.focus();
+              el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+          });
+
+          li.appendChild(link);
+          list.appendChild(li);
+
+          // Erreur inline
+          const errP = document.getElementById('error-' + err.id);
+          if (errP) errP.classList.remove('hidden');
+
+          const inputEl = document.getElementById('field-' + err.id);
+          if (inputEl) {
+            inputEl.classList.remove('border-slate-200');
+            inputEl.classList.add('border-red-500', 'bg-red-50');
+            inputEl.setAttribute('aria-invalid', 'true');
+          }
+        });
+
+        alertBox.appendChild(list);
+        errorSummaryContainer.appendChild(alertBox);
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+
+      // --- Génération du PDF avec jsPDF ---
+      function generatePDF(data) {
+        if (!window.jspdf || !window.jspdf.jsPDF) {
+          alert('Le module de téléchargement PDF est en cours de chargement. Veuillez patienter un instant ou imprimer la page.');
+          window.print();
+          return;
+        }
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({
+          orientation: 'portrait',
+          unit: 'mm',
+          format: 'a4'
+        });
+
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const margin = 20;
+        let currentY = 20;
+
+        // En-tête
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(22);
+        doc.setTextColor(129, 4, 100); // Couleur d'accentuation #810464
+        doc.text('FICHE FORMATION', pageWidth / 2, currentY, { align: 'center' });
+        
+        currentY += 15;
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(100);
+        const dateStr = new Date().toLocaleDateString('fr-FR');
+        doc.text('Généré le : ' + dateStr, pageWidth - margin, currentY, { align: 'right' });
+
+        currentY += 10;
+        doc.setDrawColor(129, 4, 100);
+        doc.setLineWidth(0.5);
+        doc.line(margin, currentY, pageWidth - margin, currentY);
+
+        currentY += 15;
+
+        // Introduction
+        doc.setFontSize(11);
+        doc.setTextColor(50);
+        const intro = "Cette fiche présente de manière structurée l'ensemble des composantes de la formation conçue pour Résid'Azur.";
+        const splitIntro = doc.splitTextToSize(intro, pageWidth - (margin * 2));
+        doc.text(splitIntro, margin, currentY);
+        currentY += (splitIntro.length * 7) + 5;
+
+        // Rendu de section
+        function renderSection(title, content) {
+          if (currentY > 260) {
+            doc.addPage();
+            currentY = 20;
+          }
+
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(12);
+          doc.setTextColor(129, 4, 100);
+          doc.text(title.toUpperCase(), margin, currentY);
+          currentY += 7;
+
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(11);
+          doc.setTextColor(0);
+
+          if (Array.isArray(content)) {
+            content.forEach(function(item) {
+              const bullet = '• ' + item;
+              const splitItem = doc.splitTextToSize(bullet, pageWidth - (margin * 2) - 5);
+              if (currentY > 275) {
+                doc.addPage();
+                currentY = 20;
+              }
+              doc.text(splitItem, margin + 5, currentY);
+              currentY += (splitItem.length * 6);
+            });
+          } else {
+            const splitContent = doc.splitTextToSize(content || '', pageWidth - (margin * 2));
+            if (currentY + (splitContent.length * 6) > 280) {
+              doc.addPage();
+              currentY = 20;
+            }
+            doc.text(splitContent, margin, currentY);
+            currentY += (splitContent.length * 6);
+          }
+
+          currentY += 10;
+        }
+
+        renderSection('1. Titre de la formation', data.titre);
+        renderSection('2. Public cible', data.publicCible);
+        renderSection('3. Objectif de formation', data.objectifFormation);
+        renderSection('4. Objectifs pédagogiques', data.objectifsPedagogiques);
+        renderSection('5. Durée', data.duree);
+
+        // Section 6 : Programme
+        if (currentY > 240) {
+          doc.addPage();
+          currentY = 20;
+        }
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(12);
+        doc.setTextColor(129, 4, 100);
+        doc.text('6. PROGRAMME', margin, currentY);
+        currentY += 10;
+
+        function renderSubSection(subTitle, content) {
+          if (currentY > 260) {
+            doc.addPage();
+            currentY = 20;
+          }
+          doc.setFont('helvetica', 'italic');
+          doc.setFontSize(11);
+          doc.setTextColor(80);
+          doc.text(subTitle, margin + 5, currentY);
+          currentY += 6;
+
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(0);
+          const splitContent = doc.splitTextToSize(content || '', pageWidth - (margin * 2) - 10);
+          doc.text(splitContent, margin + 10, currentY);
+          currentY += (splitContent.length * 6) + 5;
+        }
+
+        renderSubSection('Savoirs (Connaissances) :', data.savoirs);
+        renderSubSection('Savoir-faire (Compétences) :', data.savoirFaire);
+        renderSubSection('Savoir-être (Postures) :', data.savoirEtre);
+
+        renderSection('7. Modalités', data.modalites);
+
+        // Pied de page
+        const pageCount = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+          doc.setPage(i);
+          doc.setFontSize(8);
+          doc.setTextColor(150);
+          doc.text('Page ' + i + ' sur ' + pageCount, pageWidth / 2, 285, { align: 'center' });
+        }
+
+        const safeTitle = (data.titre || 'Sans_Titre').replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_\-]/g, '');
+        doc.save('Fiche_Formation_' + safeTitle + '.pdf');
+      }
+
+      // --- Soumission du formulaire ---
+      form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const errors = validateForm();
+
+        if (errors.length > 0) {
+          displayErrors(errors);
+          return;
+        }
+
+        clearAllErrors();
+        generatePDF(state);
+
+        // Animation bouton succès
+        btnSubmit.disabled = true;
+        btnSubmit.classList.remove('bg-[#810464]', 'hover:bg-[#6a0352]');
+        btnSubmit.classList.add('bg-emerald-600', 'cursor-default');
+        iconDownload.classList.add('hidden');
+        iconSuccess.classList.remove('hidden');
+        labelSubmit.textContent = 'Fiche générée avec succès !';
+        submitFeedback.classList.remove('hidden');
+
+        setTimeout(function() {
+          btnSubmit.disabled = false;
+          btnSubmit.classList.add('bg-[#810464]', 'hover:bg-[#6a0352]');
+          btnSubmit.classList.remove('bg-emerald-600', 'cursor-default');
+          iconDownload.classList.remove('hidden');
+          iconSuccess.classList.add('hidden');
+          labelSubmit.textContent = 'Valider et télécharger la fiche (PDF)';
+        }, 4000);
+      });
+
+      // Initialisation
+      loadSavedData();
+      populateFields();
+      updateFullscreenUI();
+    })();
+  </script>
+</body>
+</html>

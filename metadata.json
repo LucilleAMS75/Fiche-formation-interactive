@@ -1,0 +1,5 @@
+{
+  "name": "Fiche Formation Interactive",
+  "description": "Activité pédagogique pour synthétiser une formation : titre, public, objectifs, contenus et modalités avec génération de PDF.",
+  "requestFramePermissions": []
+}
